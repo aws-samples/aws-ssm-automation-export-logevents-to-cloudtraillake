@@ -1,0 +1,188 @@
+description: Export EC2 /var/log/secure to CloudTrail Lake
+schemaVersion: '0.3'
+assumeRole: '{{AutomationAssumeRole}}'
+parameters:
+  AutomationAssumeRole:
+    type: String
+    description: '(Required) The Amazon Resource Name (ARN) of the IAM role that allows Automation to perform the actions on your behalf. If no role is specified, Systems Manager Automation uses your IAM permissions to operate this runbook.'
+  channelArn:
+    type: String
+    description: The name of the CloudTrail Lake ARN to use.
+  temps3bucket:
+    type: 'AWS::S3::Bucket::Name'
+    description: Temporary S3 bucket before exporting to cloudtrail lake.
+  InstanceIds:
+    type: StringList
+    description: (Required) EC2 Instance(s) to start
+mainSteps:
+  - name: copyLogsToS3
+    action: 'aws:runCommand'
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds: '{{ InstanceIds }}'
+      Parameters:
+        commands:
+          - 'echo -e "/var/log/secure\n{\ncopytruncate\n}" | tee /etc/logrotate.d/seclog > /dev/null'
+          - 'instanceid=$(curl http://169.254.169.254/latest/meta-data/instance-id)'
+          - 'aws s3 cp /var/log/secure s3://{{temps3bucket}}/$instanceid/secure >>/tmp/s3copy.out 2>&1'
+          - /usr/sbin/logrotate -vf /etc/logrotate.d/seclog >> /tmp/logrotate.out 2>&1
+    description: copy Logs to S3
+  - name: exportLogsToCloudTrailLake
+    action: 'aws:executeScript'
+    timeoutSeconds: 120
+    onFailure: Abort
+    inputs:
+      Runtime: python3.8
+      Handler: publishEventsToCloudTrailLake
+      InputPayload:
+        channelArn: '{{channelArn}}'
+        temps3bucket: '{{temps3bucket}}'
+        InstanceIds: '{{ InstanceIds }}'
+      Script: |-
+        def download_dir(prefix, local, bucket, client):
+          import os
+          """
+          params:
+          - prefix: pattern to match in s3
+          - local: local path to folder in which to place files
+          - bucket: s3 bucket with target contents
+          - client: initialized s3 client object
+          """
+          keys = []
+          dirs = []
+          next_token = ''
+          base_kwargs = {
+              'Bucket': bucket,
+              'Prefix': prefix,
+          }
+          while next_token is not None:
+              kwargs = base_kwargs.copy()
+              if next_token != '':
+                  kwargs.update({'ContinuationToken': next_token})
+              results = client.list_objects_v2(**kwargs)
+              contents = results.get('Contents')
+              for i in contents:
+                  k = i.get('Key')
+                  if k[-1] != '/':
+                      keys.append(k)
+                  else:
+                      dirs.append(k)
+              next_token = results.get('NextContinuationToken')
+          for d in dirs:
+              dest_pathname = os.path.join(local, d)
+              if not os.path.exists(os.path.dirname(dest_pathname)):
+                  os.makedirs(os.path.dirname(dest_pathname))
+          for k in keys:
+              dest_pathname = os.path.join(local, k)
+              if not os.path.exists(os.path.dirname(dest_pathname)):
+                  os.makedirs(os.path.dirname(dest_pathname))
+              client.download_file(bucket, k, dest_pathname)
+
+
+        def publishEventsToCloudTrailLake(events, context):
+          import boto3
+          import json
+          import re
+          from datetime import datetime, timezone
+          import tempfile
+          import uuid
+          import os
+
+          # print('boto3 version')
+          # print(boto3.__version__)
+
+          # Initialize client
+          cloudtrail = boto3.client('cloudtrail-data')
+
+          # Set up the S3 client
+          s3 = boto3.client('s3')
+          resource = boto3.resource('s3')
+
+          # Set up the local file path for the Lambda container
+          # file_path = '/tmp/varlogsecure'
+          tmpdir = tempfile.mkdtemp()
+
+          file_path = os.path.dirname(tmpdir) + '/varlogsecure'
+          # print(file_path)
+
+          # Set up the S3 bucket and object key for the file to copy
+          bucket_name = events['temps3bucket']
+          channelArnArg = events['channelArn']
+          arnparts = channelArnArg.split(':')
+          InstanceIds = events['InstanceIds']
+          aws_account_id = arnparts[4]
+          auditEventsData = []
+
+          # Loop through all secure files for instances argument in the S3 bucket and download them to the local directory
+          for InstanceId in InstanceIds:
+            download_dir(InstanceId, file_path, bucket_name, s3)
+
+          # iterate through downloaded files
+          for root, dirs, files in os.walk(file_path):
+              for name in files:
+                  log_path = os.path.join(root, name)
+                  instanceid = root.split('/')[3]
+
+                  # Open the log file for reading. 
+                  f = open(log_path, 'r')
+                  
+                  # Read the first 100 lines 
+                  lines = f.readlines(100)
+
+                  while lines:
+
+                    for line in lines:
+                      # Split the line into fields
+                      parts = line.split()
+
+                      # Read timestamp from /var/log/secure and convert to desired format
+                      eventTimeStr = parts[0] + ' ' + parts[1] + ' ' + str(datetime.today().year) + ' ' + parts[2]
+                      eventTimeDt = datetime.strptime(eventTimeStr, '%b %d %Y %H:%M:%S')
+                      eventTimeArg = eventTimeDt.strftime("%Y-%m-%dT%H:%M:%S") + 'Z'
+
+                      hostname = parts[3]
+                      eventName = parts[4].strip('[')
+                      message = parts[4] + parts[5].join(parts[6:])
+                      procname = parts[4]
+
+                      eventData = {
+                          "version": "0.1",
+                          "userIdentity": {
+                              "type": procname,
+                              "principalId": hostname,
+                              "details": {
+                                  "message": message
+                              }
+                          },
+                          "eventSource": instanceid,
+                          "eventName": eventName,
+                          "eventTime": eventTimeArg,
+                          "recipientAccountId": aws_account_id,
+                          "additionalEventData": {
+                              "message": line
+                          }
+                      }
+
+                      eventDataStr = json.dumps(eventData)
+
+                      # print(eventData)
+
+                      auditEventsData.append(
+                          {
+                              "id": str(uuid.uuid4()),
+                              "eventData": eventDataStr
+                          }
+                      )
+                    
+                    # Read the next 100 lines
+                    lines = f.readlines(100)
+
+              # print(auditEventsData)
+              if len(auditEventsData) > 0:
+                response = cloudtrail.put_audit_events(auditEvents=auditEventsData, channelArn=channelArnArg)
+
+              # print(response)
+    outputs:
+      - Name: response
+        Selector: $.Payload
+        Type: StringMap
