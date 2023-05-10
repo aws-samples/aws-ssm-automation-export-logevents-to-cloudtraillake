@@ -69,20 +69,20 @@ are required to get started:
 
 1.  An AWS account with access to the AWS Management Console.
 
-2.  Install an [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) to deploy the necessary artifacts using [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html), Create AWS Systems Manager Document and Create Systems Manager State Manager Association.
+2.  [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) to deploy the necessary artifacts using [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/Welcome.html).
 
 3.  EC2 instances and/or On-premise nodes running [Amazon Linux 2](https://aws.amazon.com/amazon-linux-2) OS with [AWS Systems    Manager Agent](https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html) installed.
 
 4.  Ensure the Linux hosts have [logrotate](https://linux.die.net/man/8/logrotate) installed to ensure /var/log/secure logs are rotated after being ingested into CloudTrail Lake.
 
-**Here are the steps to set up the solution:**
+**Deploying the solution:**
 
 1. Download the Cloudformation Template from the [aws-samples github repo](https://github.com/aws-samples/aws-ssm-automation-export-logevents-to-cloudtraillake) to your local machine.
 
     https://github.com/aws-samples/aws-ssm-automation-export-logevents-to-cloudtraillake/blob/main/CloudFormation-Template/cloudformation.yaml
 
 
-2.  Using AWS CLI, deploy the required resources for the solution such as IAM Roles, IAM policy, S3 bucket, S3 Bucket Policy using the CloudFormation template downloaded in the previous step.
+2.  Using AWS CLI, deploy the required resources for the solution, such as CloudTrail Lake event data store, CloudTrail Lake integration channel, SSM Document, SSM Association, IAM Roles, IAM policy, S3 bucket and S3 Bucket Policy using the CloudFormation template downloaded in the previous step.
 
 
 ```bash
