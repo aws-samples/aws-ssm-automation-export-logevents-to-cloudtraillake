@@ -77,19 +77,10 @@ are required to get started:
 
 **Here are the steps to set up the solution:**
 
-1. Download the Cloudformation Template required for this solution to your local machine and deploy the CloudFormation Template using AWS CLI command in Step 2.
+1. Download the Cloudformation Template from the [aws-samples github repo](https://github.com/aws-samples/aws-ssm-automation-export-logevents-to-cloudtraillake) to your local machine.
 
-    https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml
+    https://github.com/aws-samples/aws-ssm-automation-export-logevents-to-cloudtraillake/blob/main/CloudFormation-Template/cloudformation.yaml
 
-Alternately, you can deploy the AWS CloudFormation template directly from the AWS Console using the links below.
-
-|AWS Region                |     Link        |
-|:------------------------:|:-----------:|
-|us-east-1 (N. Virginia)    | [<img src="images/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/new?stackName=aws-sample-exportlogeventstoctl&templateURL=https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml) |
-|us-east-2 (Ohio)    | [<img src="images/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-east-2#/stacks/new?stackName=aws-sample-exportlogeventstoctl&templateURL=https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml) |
-|us-west-1 (N. California)    | [<img src="images/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=us-west-1#/stacks/new?stackName=aws-sample-exportlogeventstoctl&templateURL=https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml) |
-|eu-west-1 (Dublin)    | [<img src="images/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/new?stackName=aws-sample-exportlogeventstoctl&templateURL=https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml) |
-|ap-northeast-1 (Tokyo)    | [<img src="images/cloudformation-launch-stack.png">](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/new?stackName=aws-sample-exportlogeventstoctl&templateURL=https://gitlab.aws.dev/cca-ambassadors/ssmautomation-exportlogeventstocloudtraillake/-/raw/main/CloudFormation-Template/cloudformation.yaml) |
 
 2.  Using AWS CLI, deploy the required resources for the solution such as IAM Roles, IAM policy, S3 bucket, S3 Bucket Policy using the CloudFormation template downloaded in the previous step.
 

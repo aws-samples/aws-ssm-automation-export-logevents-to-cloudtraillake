@@ -10,7 +10,7 @@ parameters:
     description: The name of the CloudTrail Lake ARN to use.
   temps3bucket:
     type: 'AWS::S3::Bucket::Name'
-    description: Temporary S3 bucket before exporting to cloudtrail lake.
+    description: Temporary S3 bucket before exporting to CloudTrail Lake.
   InstanceIds:
     type: StringList
     description: (Required) EC2 Instance(s) to start
@@ -123,10 +123,10 @@ mainSteps:
                   log_path = os.path.join(root, name)
                   instanceid = root.split('/')[3]
 
-                  # Open the log file for reading. 
+                  # Open the log file for reading.
                   f = open(log_path, 'r')
-                  
-                  # Read the first 100 lines 
+
+                  # Read the first 100 lines
                   lines = f.readlines(100)
 
                   while lines:
@@ -173,11 +173,11 @@ mainSteps:
                               "eventData": eventDataStr
                           }
                       )
-                    
+
                     # Read the next 100 lines
                     lines = f.readlines(100)
 
-              # print(auditEventsData)
+              # print(auditEventsData
               if len(auditEventsData) > 0:
                 response = cloudtrail.put_audit_events(auditEvents=auditEventsData, channelArn=channelArnArg)
 
