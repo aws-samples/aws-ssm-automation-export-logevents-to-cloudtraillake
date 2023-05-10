@@ -381,5 +381,5 @@ Outputs:
       Value: !Ref CTLakeEventDataStore
 
     CTLakeChannel:
-      Description: "CloudTrail Lake Event Data Store"
+      Description: "CloudTrail Lake channel ARN"
       Value: !GetAtt CTLakeChannel.ChannelArn
